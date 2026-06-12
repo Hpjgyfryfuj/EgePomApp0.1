@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ЕГЭ Помощник</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 450px; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); box-sizing: border-box; text-align: center; margin-top: 20px; display: none; position: relative; }
+        .active-screen { display: block; }
+        input { width: 100%; padding: 12px; border: 2px solid #ced4da; border-radius: 8px; font-size: 16px; box-sizing: border-box; text-align: center; margin-bottom: 15px; }
+        input:focus { border-color: #007bff; outline: none; }
+        .btn { width: 100%; padding: 14px; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .btn-blue { background: #007bff; }
+        .btn-green { background: #28a745; }
+        .btn-gray { background: #6c757d; }
+        .btn-vk { background: #0077ff; }
+        .btn-google { background: #ffffff; color: #757575; border: 1px solid #ddd; }
+        
+        .logout-btn { position: absolute; top: 15px; right: 15px; background: #dc3545; color: white; border: none; border-radius: 6px; padding: 6px 10px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .logout-btn:hover { background: #bd2130; }
+        
+        .theme-tag { display: inline-block; background: #e3f2fd; color: #0d47a1; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 15px; }
+        .task-box { min-height: 100px; font-size: 18px; text-align: left; background: #fafafa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff; margin-bottom: 20px; }
+        .result { font-size: 16px; font-weight: bold; margin-top: 15px; }
+        
+        .pom-container { display: flex; align-items: center; background: #e8f4fd; padding: 15px; border-radius: 12px; margin-top: 15px; border: 2px solid #b8daff; display: none; }
+        .pom-avatar { font-size: 40px; margin-right: 15px; }
+        .pom-bubble { text-align: left; font-size: 14px; color: #004085; font-weight: 500; font-style: italic; }
+        
+        .menu-item { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 22px; margin-bottom: 15px; cursor: pointer; transition: 0.2s; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .menu-item:hover { border-color: #007bff; background: #e3f2fd; }
+        
+        .stats-box { background: #f8f9fa; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: left; border: 1px solid #e9ecef; }
+        .stats-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; }
+        .stats-val { font-weight: bold; }
+        .stats-title { text-align: left; margin: 0 0 10px 5px; font-size: 16px; font-weight: bold; color: #495057; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen" class="container active-screen">
+        <h2>Вход в систему 🔐</h2>
+        <input type="text" id="auth-username" placeholder="Логин">
+        <input type="password" id="auth-password" placeholder="Пароль">
+        
+        <button class="btn btn-blue" onclick="handleAuth('login')">Войти</button>
+        <button class="btn btn-gray" onclick="handleAuth('register')">Быстрая Регистрация</button>
+        
+        <div style="margin: 20px 0; color: #aaa;">— ИЛИ —</div>
+        <button class="btn btn-google" onclick="oauthAlert('Google')">Войти через Google</button>
+        <button class="btn btn-vk" onclick="oauthAlert('ВКонтакте')">Войти через ВКонтакте</button>
+        
+        <div id="auth-message" class="result"></div>
+    </div>
+
+    <div id="menu-screen" class="container">
+        <button class="logout-btn" onclick="logout()">Выйти из профиля</button>
+        <h2 style="margin-top: 20px;">Главное меню 🚀</h2>
+        <p id="welcome-text" style="color: #666; margin-bottom: 25px;">Добро пожаловать!</p>
+        
+        <div class="menu-item" onclick="switchScreen('subject-screen')">🎯 Тренировка</div>
+        <div class="menu-item" onclick="openStats()">📊 Статистика</div>
+    </div>
+
+    <div id="subject-screen" class="container">
+        <button class="logout-btn" onclick="logout()">Выйти из профиля</button>
+        <button class="btn btn-gray" style="padding: 8px; width: auto; position: absolute; left: 15px; top: 12px; font-size: 12px;" onclick="switchScreen('menu-screen')">← Назад</button>
+        <h2 style="margin-top: 30px;">Выбери предмет 📚</h2>
+        <div class="menu-item" onclick="openSubject('rus')">📚 Русский язык</div>
+        <div class="menu-item" onclick="openSubject('math')">📐 Математика</div>
+    </div>
+
+    <div id="task-screen" class="container">
+        <button class="logout-btn" onclick="logout()">Выйти из профиля</button>
+        <button class="btn btn-gray" style="padding: 8px; width: auto; position: absolute; left: 15px; top: 12px; font-size: 12px;" onclick="switchScreen('subject-screen')">← К предметам</button>
+        
+        <div id="task-theme" class="theme-tag" style="margin-top: 30px;">Загрузка...</div>
+        <div id="task-text" class="task-box" style="white-space: pre-line;">Ожидание...</div>
+        
+        <input type="text" id="user-answer" placeholder="Введите ваш ответ">
+        <button class="btn btn-blue" onclick="checkAnswer()">Проверить ответ</button>
+        <button class="btn btn-green" onclick="loadTask()">Следующее задание →</button>
+
+        <div id="result-message" class="result"></div>
+        <div id="pom-ui" class="pom-container">
+            <div class="pom-avatar">🤖</div>
+            <div class="pom-bubble"><b>ЕГЭ Пом:</b><br><span id="pom-text">Подсказка</span></div>
+        </div>
+    </div>
+
+    <div id="stats-screen" class="container">
+        <button class="logout-btn" onclick="logout()">Выйти из профиля</button>
+        <button class="btn btn-gray" style="padding: 8px; width: auto; position: absolute; left: 15px; top: 12px; font-size: 12px;" onclick="switchScreen('menu-screen')">← В меню</button>
+        <h2 style="margin-top: 30px;">Твоя статистика 📊</h2>
+        
+        <div class="stats-title">📚 Русский язык</div>
+        <div class="stats-box">
+            <div class="stats-row"><span>Всего ответов:</span><span id="stats-rus-total" class="stats-val">0</span></div>
+            <div class="stats-row"><span style="color: #28a745;">Правильных:</span><span id="stats-rus-correct" class="stats-val" style="color: #28a745;">0</span></div>
+            <div class="stats-row"><span style="color: #dc3545;">Ошибок:</span><span id="stats-rus-wrong" class="stats-val" style="color: #dc3545;">0</span></div>
+            <div class="stats-row"><span>Успешность:</span><span id="stats-rus-percent" class="stats-val">0%</span></div>
+        </div>
+
+        <div class="stats-title">📐 Математика</div>
+        <div class="stats-box">
+            <div class="stats-row"><span>Всего ответов:</span><span id="stats-math-total" class="stats-val">0</span></div>
+            <div class="stats-row"><span style="color: #28a745;">Правильных:</span><span id="stats-math-correct" class="stats-val" style="color: #28a745;">0</span></div>
+            <div class="stats-row"><span style="color: #dc3545;">Ошибок:</span><span id="stats-math-wrong" class="stats-val" style="color: #dc3545;">0</span></div>
+            <div class="stats-row"><span>Успешность:</span><span id="stats-math-percent" class="stats-val">0%</span></div>
+        </div>
+        <button class="btn btn-blue" onclick="resetStats()">Сбросить весь прогресс</button>
+    </div>
+
+    <script>
+        const SERVER_URL = 'https://snowshoe-subtly-booth.ngrok-free.dev';
+        
+        let currentUser = "";
+        let currentSubject = 'rus';
+        let currentAnswer = ""; 
+        let currentHint = "";
+        let userStats = {
+            rus: { total: 0, correct: 0, wrong: 0 },
+            math: { total: 0, correct: 0, wrong: 0 }
+        };
+
+        // АВТО-ВХОД: Выполняется сразу при открытии или обновлении страницы
+        window.onload = function() {
+            const savedUser = localStorage.getItem('egepom_username');
+            if (savedUser) {
+                currentUser = savedUser;
+                document.getElementById('welcome-text').innerText = `Привет, ${currentUser}! Добро пожаловать в тренажёр.`;
+                
+                // Стягиваем актуальную статистику из БД
+                fetch(`${SERVER_URL}/get_stats/${currentUser}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.stats) {
+                            userStats = data.stats;
+                            switchScreen('menu-screen');
+                        } else {
+                            logout();
+                        }
+                    })
+                    .catch(() => {
+                        document.getElementById('auth-message').innerText = "Ошибка соединения с сервером.";
+                    });
+            }
+        };
+
+         Tar // Навигация
+        function switchScreen(screenId) {
+            document.querySelectorAll('.container').forEach(el => el.classList.remove('active-screen'));
+            document.getElementById(screenId).classList.add('active-screen');
+            document.getElementById('auth-message').innerText = "";
+            document.getElementById('result-message').innerText = "";
+            document.getElementById('pom-ui').style.display = "none";
+        }
+
+        function handleAuth(type) {
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+            const msgDiv = document.getElementById('auth-message');
+
+            if (!username || !password) {
+                msgDiv.style.color = "orange";
+                msgDiv.innerText = "Заполните все поля!";
+                return;
+            }
+
+            fetch(`${SERVER_URL}/${type}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json().then(data => ({ status: res.status, data })))
+            .then(({ status, data }) => {
+                if (status === 200) {
+                    if (type === 'login') {
+                        currentUser = username;
+                        localStorage.setItem('egepom_username', username); // Запоминаем сессию
+                        userStats = data.stats;
+                        document.getElementById('welcome-text').innerText = `Привет, ${currentUser}! Добро пожаловать в тренажёр.`;
+                        switchScreen('menu-screen');
+                    } else {
+                        msgDiv.style.color = "green";
+                        msgDiv.innerText = data.success + " Теперь нажмите 'Войти'.";
+                    }
+                } else {
+                    msgDiv.style.color = "red";
+                    msgDiv.innerText = data.error;
+                }
+            })
+            .catch(() => {
+                msgDiv.style.color = "red";
+                msgDiv.innerText = "Ошибка: проверь работу Python-сервера!";
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('egepom_username'); // Стираем сессию
+            currentUser = "";
+            switchScreen('auth-screen');
+        }
+
+        function openSubject(subject) {
+            currentSubject = subject;
+            switchScreen('task-screen');
+            loadTask();
+        }
+
+        function loadTask() {
+            document.getElementById('user-answer').value = "";
+            document.getElementById('result-message').innerText = "";
+            document.getElementById('pom-ui').style.display = "none";
+            document.getElementById('task-text').innerText = "Выбираем случайное задание...";
+
+            fetch(`${SERVER_URL}/get_task/${currentSubject}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('task-theme').innerText = data.theme;
+                    document.getElementById('task-text').innerText = data.text;
+                    currentAnswer = data.answer;
+                    currentHint = data.pom_phrase;
+                });
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('user-answer').value.trim();
+            const resultDiv = document.getElementById('result-message');
+            const pomUI = document.getElementById('pom-ui');
+            const pomText = document.getElementById('pom-text');
+
+            if (!userAnswer) {
+                resultDiv.style.color = "orange";
+                resultDiv.innerText = "Ты ничего не ввел!";
+                return;
+            }
+
+            const isCorrect = userAnswer.toLowerCase() === currentAnswer.toLowerCase();
+            
+            // Локальное обновление экрана для мгновенного отклика
+            userStats[currentSubject].total++;
+            if (isCorrect) {
+                userStats[currentSubject].correct++;
+                resultDiv.style.color = "#28a745";
+                resultDiv.innerText = "Абсолютно верно! 🎉";
+                pomUI.style.display = "flex";
+                pomText.innerText = "Отличная работа! Задача решена верно.";
+            } else {
+                userStats[currentSubject].wrong++;
+                resultDiv.style.color = "#dc3545";
+                resultDiv.innerText = "Неверно. Подумай еще раз! 🛠️";
+                pomUI.style.display = "flex";
+                pomText.innerText = currentHint ? currentHint : "Упс, ошибка. Перепроверь условия.";
+            }
+
+            // СИНХРОНИЗАЦИЯ С БД: Отправляем результат выполнения на сервер
+            fetch(`${SERVER_URL}/update_stats`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: currentUser, subject: currentSubject, is_correct: isCorrect })
+            });
+        }
+
+        function openStats() {
+            switchScreen('stats-screen');
+            
+            // Русский язык
+            document.getElementById('stats-rus-total').innerText = userStats.rus.total;
+            document.getElementById('stats-rus-correct').innerText = userStats.rus.correct;
+            document.getElementById('stats-rus-wrong').innerText = userStats.rus.wrong;
+            const rusPercent = userStats.rus.total > 0 ? Math.round((userStats.rus.correct / userStats.rus.total) * 100) : 0;
+            document.getElementById('stats-rus-percent').innerText = rusPercent + "%";
+            
+            // Математика
+            document.getElementById('stats-math-total').innerText = userStats.math.total;
+            document.getElementById('stats-math-correct').innerText = userStats.math.correct;
+            document.getElementById('stats-math-wrong').innerText = userStats.math.wrong;
+            const mathPercent = userStats.math.total > 0 ? Math.round((userStats.math.correct / userStats.math.total) * 100) : 0;
+            document.getElementById('stats-math-percent').innerText = mathPercent + "%";
+        }
+
+        function resetStats() {
+            if(confirm("Вы уверены, что хотите обнулить всю статистику?")) {
+                fetch(`${SERVER_URL}/reset_stats`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser })
+                }).then(() => {
+                    userStats = {
+                        rus: { total: 0, correct: 0, wrong: 0 },
+                        math: { total: 0, correct: 0, wrong: 0 }
+                    };
+                    openStats();
+                });
+            }
+        }
+
+        function oauthAlert(network) {
+            alert(`Вход через ${network} временно недоступен.`);
+        }
+    </script>
+</body>
+</html>
